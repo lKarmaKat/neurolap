@@ -5,7 +5,7 @@ const LEFT = ["ArrowLeft", "KeyA"];
 const RIGHT = ["ArrowRight", "KeyD"];
 const UP = ["ArrowUp", "KeyW"];
 const DOWN = ["ArrowDown", "KeyS"];
-const HANDLED = new Set([...LEFT, ...RIGHT, ...UP, ...DOWN, "KeyR", "Space"]);
+const HANDLED = new Set([...LEFT, ...RIGHT, ...UP, ...DOWN, "KeyR", "KeyP", "Space"]);
 
 const any = (pressed: ReadonlySet<string>, codes: string[]): boolean =>
   codes.some((c) => pressed.has(c));
@@ -22,6 +22,7 @@ export function computeInput(pressed: ReadonlySet<string>): InputMessage {
 export interface InputHandlers {
   onInput(msg: InputMessage): void; // appelé uniquement quand l'entrée change
   onReset(sameSeed: boolean): void;
+  onToggleMode(): void; // bascule clavier <-> pilote IA
 }
 
 export interface Keyboard {
@@ -44,6 +45,10 @@ export function installKeyboard(h: InputHandlers): Keyboard {
     if (!HANDLED.has(e.code)) return;
     e.preventDefault(); // évite le défilement de la page
     if (e.repeat) return;
+    if (e.code === "KeyP") {
+      h.onToggleMode();
+      return;
+    }
     if (e.code === "KeyR") {
       h.onReset(e.shiftKey);
       return;

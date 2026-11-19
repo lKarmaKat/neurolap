@@ -37,6 +37,8 @@ async def running_server(
                     continue
                 if msg["type"] == "input":
                     session.set_input(msg["steering"], msg["throttle"])
+                elif msg["type"] == "mode":
+                    session.set_mode(msg["mode"])
                 else:
                     send_all(session.reset(msg["seed"]))
         finally:

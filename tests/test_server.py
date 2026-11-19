@@ -94,3 +94,19 @@ def test_steering_ramps_up_then_recenters():
         s.tick()
         ticks += 1
     assert ticks <= 5  # recentrage plus rapide que la montée
+
+
+def test_parse_mode():
+    assert parse_message('{"type":"mode","mode":"pilot"}') == {"type": "mode", "mode": "pilot"}
+    assert parse_message('{"type":"mode","mode":"autre"}') is None
+
+
+def test_pilot_mode_drives_and_ignores_keyboard():
+    s = Session()
+    s.set_mode("pilot")
+    s.set_input(-1.0, -1.0)  # le clavier ne doit pas compter en mode pilote
+    last = None
+    for _ in range(60):
+        last = s.tick()[0]
+    assert last is not None and last["mode"] == "pilot"
+    assert last["car"]["speed"] > 1.0  # le pilote a accéléré malgré le clavier en marche arrière

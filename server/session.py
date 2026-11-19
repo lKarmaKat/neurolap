@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable, Sequence
 from typing import Any
 
 import numpy as np
 
+from agents.ray_pilot import RayPilot
 from server.protocol import encode_state, encode_track
 from sim.env import NeurolapEnv
 
@@ -16,9 +18,16 @@ STEER_RETURN_RATE = 8.0  # recentrage plus rapide
 
 class Session:
     def __init__(
-        self, env: NeurolapEnv | None = None, end_pause_ticks: int = 30, seed: int | None = None
+        self,
+        env: NeurolapEnv | None = None,
+        end_pause_ticks: int = 30,
+        seed: int | None = None,
+        pilot: Callable[[np.ndarray], Sequence[float]] | None = None,
     ) -> None:
         self.env = env or NeurolapEnv()
+        self.pilot = pilot or RayPilot()
+        self.mode = "manual"  # "manual" (clavier) ou "pilot" (agent)
+        self._obs = np.zeros(9, dtype=np.float32)
         self.end_pause_ticks = end_pause_ticks
         self._seed_rng = np.random.default_rng(seed)
         self.steering = 0.0  # braquage réellement appliqué (rampe vers la cible)
@@ -32,6 +41,11 @@ class Session:
     def set_input(self, steering: float, throttle: float) -> None:
         self.target_steering, self.throttle = steering, throttle
 
+    def set_mode(self, mode: str) -> None:
+        self.mode = mode
+        self.steering = 0.0
+        self._state_msg = {**self._state_msg, "mode": mode}  # visible même pendant la pause
+
     def _ramp_steering(self) -> None:
         """Simule un volant analogique : le braquage rejoint la cible avec une vitesse limitée."""
         cur, tgt = self.steering, self.target_steering
@@ -43,11 +57,11 @@ class Session:
         """Nouvel épisode (seed tirée au hasard si absente). Retourne [track, state]."""
         if seed is None:
             seed = int(self._seed_rng.integers(2**31))
-        _, info = self.env.reset(seed=seed)
+        self._obs, info = self.env.reset(seed=seed)
         self._pause = 0
         self.steering = 0.0
         self._track_msg = encode_track(self.env, seed)
-        self._state_msg = encode_state(self.env, 0.0, False, False, info)
+        self._state_msg = encode_state(self.env, 0.0, False, False, info, self.mode)
         return self.snapshot()
 
     def snapshot(self) -> list[dict[str, Any]]:
@@ -61,7 +75,11 @@ class Session:
             if self._pause >= self.end_pause_ticks:
                 return self.reset()
             return [self._state_msg]
-        self._ramp_steering()
-        _, reward, terminated, truncated, info = self.env.step([self.steering, self.throttle])
-        self._state_msg = encode_state(self.env, reward, terminated, truncated, info)
+        if self.mode == "pilot":
+            action: Sequence[float] = self.pilot(self._obs)  # l'agent bypasse la rampe clavier
+        else:
+            self._ramp_steering()
+            action = [self.steering, self.throttle]
+        self._obs, reward, terminated, truncated, info = self.env.step(action)
+        self._state_msg = encode_state(self.env, reward, terminated, truncated, info, self.mode)
         return [self._state_msg]

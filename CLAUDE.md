@@ -39,7 +39,7 @@ Depuis la racine du projet (Windows, venv dans `.venv`) :
 - Tests : `.venv\Scripts\python -m pytest`
 - Lint : `.venv\Scripts\python -m ruff check .`
 - Serveur : `.venv\Scripts\python -m server` (ws://127.0.0.1:8765, options `--host`, `--port`)
-- Web : `cd web`, `npm install` (une fois), `npm run dev`, puis ouvrir `http://localhost:5173/` (serveur Python lancé dans un autre terminal). Clavier : flèches ou Z/Q/S/D, R = nouveau circuit, Maj+R = rejouer le même. Typecheck + build : `npm run build`.
+- Web : `cd web`, `npm install` (une fois), `npm run dev`, puis ouvrir `http://localhost:5173/` (serveur Python lancé dans un autre terminal). Clavier : flèches ou Z/Q/S/D, P = pilote IA (agents/ray_pilot.py) <-> clavier, R = nouveau circuit, Maj+R = rejouer le même. Typecheck + build : `npm run build`.
 
 ## Économie de tokens (priorité du projet)
 

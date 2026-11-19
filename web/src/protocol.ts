@@ -24,8 +24,11 @@ export interface CarState {
 
 export type Outcome = "running" | "collision" | "finished" | "timeout";
 
+export type Mode = "manual" | "pilot";
+
 export interface StateMessage {
   type: "state";
+  mode: Mode;
   step: number;
   car: CarState;
   rays: number[];
@@ -42,7 +45,12 @@ export interface ResetMessage {
   seed?: number; // absent : le serveur tire une seed au hasard
 }
 
-export type ClientMessage = InputMessage | ResetMessage;
+export interface ModeMessage {
+  type: "mode";
+  mode: Mode;
+}
+
+export type ClientMessage = InputMessage | ResetMessage | ModeMessage;
 
 export interface InputMessage {
   type: "input";

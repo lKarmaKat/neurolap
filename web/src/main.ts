@@ -16,6 +16,10 @@ const keyboard = installKeyboard({
     const seed = conn.data.track?.seed;
     conn.send(sameSeed && seed !== undefined ? { type: "reset", seed } : { type: "reset" });
   },
+  onToggleMode: () => {
+    const next = conn.data.state?.mode === "pilot" ? "manual" : "pilot";
+    conn.send({ type: "mode", mode: next });
+  },
 });
 
 function frame(): void {

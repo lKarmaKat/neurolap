@@ -33,7 +33,12 @@ def encode_track(env: NeurolapEnv, seed: int) -> dict[str, Any]:
 
 
 def encode_state(
-    env: NeurolapEnv, reward: float, terminated: bool, truncated: bool, info: dict[str, Any]
+    env: NeurolapEnv,
+    reward: float,
+    terminated: bool,
+    truncated: bool,
+    info: dict[str, Any],
+    mode: str = "manual",
 ) -> dict[str, Any]:
     c = env.car
     if info["collision"]:
@@ -46,6 +51,7 @@ def encode_state(
         outcome = "running"
     return {
         "type": "state",
+        "mode": mode,
         "step": env.steps,
         "car": {
             "x": round(c.x, 3),
@@ -94,4 +100,8 @@ def parse_message(raw: str | bytes) -> dict[str, Any] | None:
         if seed is not None and (isinstance(seed, bool) or not isinstance(seed, int)):
             return None
         return {"type": "reset", "seed": seed}
+    if msg.get("type") == "mode":
+        if msg.get("mode") not in ("manual", "pilot"):
+            return None
+        return {"type": "mode", "mode": msg["mode"]}
     return None

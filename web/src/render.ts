@@ -106,7 +106,7 @@ function drawHud(
   ctx.fillStyle = "rgba(232,232,232,0.6)";
   ctx.font = "13px system-ui, sans-serif";
   ctx.fillText(
-    "↑↓←→ ou Z/Q/S/D : conduire   R : nouveau circuit   Maj+R : rejouer ce circuit",
+    "↑↓←→ ou Z/Q/S/D : conduire   P : pilote IA   R : nouveau circuit   Maj+R : rejouer",
     16,
     h - 28,
   );
@@ -115,6 +115,7 @@ function drawHud(
   ctx.fillText(`Complétion : ${(s.completion * 100).toFixed(1)} %`, 16, 16);
   ctx.fillText(`Vitesse : ${(s.car.speed * 3.6).toFixed(0)} km/h`, 16, 38);
   ctx.fillText(`Pas : ${s.step}   Seed : ${d.track.seed}`, 16, 60);
+  ctx.fillText(`Mode : ${s.mode === "pilot" ? "pilote IA" : "manuel"}`, 16, 82);
   const label = OUTCOME_LABEL[s.outcome];
   if (label) {
     ctx.font = "bold 40px system-ui, sans-serif";
