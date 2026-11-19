@@ -38,7 +38,7 @@ Depuis la racine du projet (Windows, venv dans `.venv`) :
 - Installer : `python -m venv .venv` puis `.venv\Scripts\python -m pip install -e ".[dev]"` (ou `pip install numpy pytest ruff`)
 - Tests : `.venv\Scripts\python -m pytest`
 - Lint : `.venv\Scripts\python -m ruff check .`
-- Serveur : _à compléter (incrément 6)_
+- Serveur : `.venv\Scripts\python -m server` (ws://127.0.0.1:8765, options `--host`, `--port`)
 - Web : _à compléter (incrément 7)_
 
 ## Économie de tokens (priorité du projet)

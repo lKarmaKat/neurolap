@@ -3,7 +3,7 @@ name = "neurolap"
 version = "0.1.0"
 description = "Jeu de voitures 2D pour entraînement d'IA"
 requires-python = ">=3.11"
-dependencies = ["numpy"]
+dependencies = ["numpy", "websockets"]
 
 [project.optional-dependencies]
 dev = ["pytest", "ruff"]
