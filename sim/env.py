@@ -7,6 +7,7 @@ from typing import Any
 import numpy as np
 
 from sim.car import CarParams, CarState, step_car
+from sim.sensors import MAX_RANGE, cast_rays, wall_segments
 from sim.track import generate_track
 
 
@@ -25,12 +26,13 @@ class NeurolapEnv:
         self.track = generate_track(self.rng)
         x, y = self.track.start_pos
         self.car = CarState(x=x, y=y, heading=self.track.start_heading)
+        self._segments = wall_segments(self.track)
         self.steps = 0
 
     def reset(self, seed: int | None = None) -> tuple[np.ndarray, dict[str, Any]]:
         self.rng = np.random.default_rng(seed)
         self._new_episode()
-        return self._observe(), {}
+        return self._observe(), self._info()
 
     def step(self, action: Any) -> tuple[np.ndarray, float, bool, bool, dict[str, Any]]:
         a = np.asarray(action, dtype=np.float64)
@@ -40,10 +42,20 @@ class NeurolapEnv:
         self.car = step_car(self.car, float(steering), float(throttle), self.params, self.dt)
         self.steps += 1
         truncated = self.steps >= self.max_steps
-        return self._observe(), 0.0, False, truncated, {}
+        return self._observe(), 0.0, False, truncated, self._info()
+
+    def _rays(self) -> np.ndarray:
+        """Distances (m) des rayons aux murs."""
+        c = self.car
+        return cast_rays(c.x, c.y, c.heading, *self._segments)
+
+    def _info(self) -> dict[str, Any]:
+        return {"ray_distances": self._rays()}
 
     def _observe(self) -> np.ndarray:
+        """9 valeurs : 7 rayons dans [0, 1], puis vitesse et vitesse angulaire dans [-1, 1]."""
         p = self.params
         speed = self.car.speed / p.max_speed
         yaw = np.clip(self.car.yaw_rate / p.max_yaw_rate, -1.0, 1.0)
-        return np.array([speed, yaw], dtype=np.float32)
+        rays = self._rays() / MAX_RANGE
+        return np.concatenate([rays, [speed, yaw]]).astype(np.float32)
