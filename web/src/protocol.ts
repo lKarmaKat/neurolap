@@ -38,7 +38,70 @@ export interface StateMessage {
   done: boolean;
 }
 
-export type ServerMessage = TrackMessage | StateMessage;
+export type View = "play" | "replay";
+
+export interface ViewMessage {
+  type: "view";
+  view: View;
+}
+
+export interface RunInfo {
+  name: string;
+  generations: number;
+}
+
+export interface RunsMessage {
+  type: "runs";
+  runs: RunInfo[];
+  current: string | null;
+}
+
+export interface HistoryRow {
+  generation: number;
+  best: number;
+  mean: number;
+  val_fitness: number | null;
+  val_finished: number | null;
+  val_lap_s: number | null;
+}
+
+export interface HistoryMessage {
+  type: "history";
+  run: string | null;
+  rows: HistoryRow[];
+}
+
+export type CarStatus = "running" | "finished" | "crashed" | "stalled" | "timeout";
+
+export interface ReplayCar {
+  x: number;
+  y: number;
+  heading: number;
+  status: CarStatus;
+  completion: number;
+}
+
+export interface ReplayStateMessage {
+  type: "replay_state";
+  run: string | null;
+  generation: number;
+  n_generations: number;
+  circuit: number;
+  n_circuits: number;
+  speed: number;
+  step: number;
+  running: number;
+  fitness: number[];
+  cars: ReplayCar[];
+}
+
+export type ServerMessage =
+  | TrackMessage
+  | StateMessage
+  | ViewMessage
+  | RunsMessage
+  | HistoryMessage
+  | ReplayStateMessage;
 
 export interface ResetMessage {
   type: "reset";
@@ -50,7 +113,26 @@ export interface ModeMessage {
   mode: Mode;
 }
 
-export type ClientMessage = InputMessage | ResetMessage | ModeMessage;
+export interface ViewSelectMessage {
+  type: "view";
+  view: View;
+}
+
+// Champs absents : le serveur garde la valeur actuelle.
+export interface ReplaySelectMessage {
+  type: "replay";
+  run?: string;
+  generation?: number;
+  circuit?: number;
+  speed?: number;
+}
+
+export type ClientMessage =
+  | InputMessage
+  | ResetMessage
+  | ModeMessage
+  | ViewSelectMessage
+  | ReplaySelectMessage;
 
 export interface InputMessage {
   type: "input";

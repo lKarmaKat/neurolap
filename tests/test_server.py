@@ -66,6 +66,8 @@ def test_websocket_integration():
         async with running_server(Session(), port=0, fps=60) as server:
             port = server.sockets[0].getsockname()[1]
             async with connect(f"ws://127.0.0.1:{port}") as ws:
+                view = json.loads(await ws.recv())
+                assert view == {"type": "view", "view": "play"}
                 first = json.loads(await ws.recv())
                 assert first["type"] == "track" and len(first["center"]) > 100
                 await ws.send(json.dumps({"type": "input", "steering": 0, "throttle": 1}))

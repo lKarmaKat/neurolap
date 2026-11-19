@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import math
+import re
 from typing import Any
 
 import numpy as np
@@ -82,6 +83,29 @@ def _clip(v: float) -> float:
     return max(-1.0, min(1.0, v))
 
 
+_RUN_RE = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
+
+
+def _parse_replay(msg: dict[str, Any]) -> dict[str, Any] | None:
+    """Champs optionnels : run (nom sûr), generation, circuit (entiers >= 0), speed (1, 2, 4, 8)."""
+    out: dict[str, Any] = {"type": "replay"}
+    if "run" in msg:
+        if not isinstance(msg["run"], str) or not _RUN_RE.match(msg["run"]):
+            return None
+        out["run"] = msg["run"]
+    for key in ("generation", "circuit"):
+        if key in msg:
+            v = msg[key]
+            if isinstance(v, bool) or not isinstance(v, int) or v < 0:
+                return None
+            out[key] = v
+    if "speed" in msg:
+        if msg["speed"] not in (1, 2, 4, 8) or isinstance(msg["speed"], bool):
+            return None
+        out["speed"] = msg["speed"]
+    return out
+
+
 def parse_message(raw: str | bytes) -> dict[str, Any] | None:
     """Valide un message entrant. Retourne None s'il est invalide (il est alors ignoré)."""
     try:
@@ -100,6 +124,12 @@ def parse_message(raw: str | bytes) -> dict[str, Any] | None:
         if seed is not None and (isinstance(seed, bool) or not isinstance(seed, int)):
             return None
         return {"type": "reset", "seed": seed}
+    if msg.get("type") == "view":
+        if msg.get("view") not in ("play", "replay"):
+            return None
+        return {"type": "view", "view": msg["view"]}
+    if msg.get("type") == "replay":
+        return _parse_replay(msg)
     if msg.get("type") == "mode":
         if msg.get("mode") not in ("manual", "pilot"):
             return None

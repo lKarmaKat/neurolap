@@ -2,7 +2,7 @@
 import type { Point, StateMessage, TrackMessage } from "./protocol";
 import type { GameData } from "./socket";
 
-const PX_PER_M = 10; // zoom de la caméra
+export const PX_PER_M = 10; // zoom de la caméra
 const CAR_LENGTH = 4.0;
 const CAR_WIDTH = 1.8;
 
@@ -18,7 +18,7 @@ function polyline(ctx: CanvasRenderingContext2D, pts: Point[], close: boolean): 
   if (close) ctx.closePath();
 }
 
-function drawTrack(ctx: CanvasRenderingContext2D, t: TrackMessage): void {
+export function drawTrack(ctx: CanvasRenderingContext2D, t: TrackMessage): void {
   // Surface : polygone extérieur + intérieur, rempli en « even-odd » (trou au milieu).
   ctx.beginPath();
   for (const wall of [t.left, t.right]) {
@@ -106,7 +106,7 @@ function drawHud(
   ctx.fillStyle = "rgba(232,232,232,0.6)";
   ctx.font = "13px system-ui, sans-serif";
   ctx.fillText(
-    "↑↓←→ ou Z/Q/S/D : conduire   P : pilote IA   R : nouveau circuit   Maj+R : rejouer",
+    "↑↓←→ ou Z/Q/S/D : conduire   P : pilote IA   R : nouveau circuit   Maj+R : rejouer   V : rediffusion",
     16,
     h - 28,
   );
@@ -125,7 +125,14 @@ function drawHud(
   }
 }
 
-export function render(canvas: HTMLCanvasElement, d: GameData): void {
+export interface Frame {
+  ctx: CanvasRenderingContext2D;
+  w: number;
+  h: number;
+}
+
+// Prépare le Canvas (HiDPI) et efface le fond. Retourne null si le contexte est indisponible.
+export function prepareCanvas(canvas: HTMLCanvasElement): Frame | null {
   const dpr = window.devicePixelRatio || 1;
   const w = canvas.clientWidth;
   const h = canvas.clientHeight;
@@ -134,11 +141,17 @@ export function render(canvas: HTMLCanvasElement, d: GameData): void {
     canvas.height = Math.round(h * dpr);
   }
   const ctx = canvas.getContext("2d");
-  if (!ctx) return;
-
+  if (!ctx) return null;
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.fillStyle = "#1b1d22";
   ctx.fillRect(0, 0, w, h);
+  return { ctx, w, h };
+}
+
+export function render(canvas: HTMLCanvasElement, d: GameData): void {
+  const frame = prepareCanvas(canvas);
+  if (!frame) return;
+  const { ctx, w, h } = frame;
 
   if (d.track && d.state) {
     ctx.save();

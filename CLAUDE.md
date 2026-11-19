@@ -39,7 +39,8 @@ Depuis la racine du projet (Windows, venv dans `.venv`) :
 - Tests : `.venv\Scripts\python -m pytest`
 - Lint : `.venv\Scripts\python -m ruff check .`
 - Serveur : `.venv\Scripts\python -m server` (ws://127.0.0.1:8765, options `--host`, `--port`)
-- Entraînement : `.venv\Scripts\python -m agents.train --gens 80` (sauvegarde `models/best.npz`, ignoré par git, ~3 min). Voir un pilote entraîné : `.venv\Scripts\python -m server --pilot models/best.npz`, puis P dans le navigateur.
+- Entraînement : `.venv\Scripts\python -m agents.train --gens 80 --run nom` (~3 min). Enregistre chaque génération et `history.csv` dans `models/runs/<nom>/` et le meilleur réseau dans `models/best.npz` (`models/` est ignoré par git).
+- Rediffusion : touche V dans le navigateur (jeu <-> rediffusion). ←/→ génération (Maj : ±10), Début/Fin, 1-3 circuit, ↑/↓ vitesse, Espace relancer, clic/glisser sur la courbe pour choisir la génération. Peut se regarder pendant l'entraînement (rafraîchi toutes les 2 s). Voir un pilote entraîné : `.venv\Scripts\python -m server --pilot models/best.npz`, puis P dans le navigateur.
 - Benchmark sim : `.venv\Scripts\python tools\benchmark.py`
 - Web : `cd web`, `npm install` (une fois), `npm run dev`, puis ouvrir `http://localhost:5173/` (serveur Python lancé dans un autre terminal). Clavier : flèches ou Z/Q/S/D, P = pilote IA (agents/ray_pilot.py) <-> clavier, R = nouveau circuit, Maj+R = rejouer le même. Typecheck + build : `npm run build`.
 

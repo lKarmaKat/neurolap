@@ -10,6 +10,7 @@ import numpy as np
 
 from agents.mlp import SIZES, MLPPilot, n_params
 from sim.env import NeurolapEnv
+from sim.track import Track, generate_track
 
 MAX_STEPS = 1500  # 50 s : assez pour un tour, et borne le coût d'une voiture qui traîne
 STALL_STEPS = 150  # arrêt si aucun nouveau record de progression pendant 5 s
@@ -28,19 +29,58 @@ class EpisodeResult:
         return self.completion + bonus
 
 
+class Episode:
+    """Un épisode pas à pas (même logique à l'entraînement et dans la rediffusion)."""
+
+    def __init__(
+        self,
+        pilot: Callable[[np.ndarray], Sequence[float]],
+        seed: int,
+        track: Track | None = None,
+    ) -> None:
+        # Le circuit ne dépend que de la seed ; on peut donc le partager entre épisodes.
+        track = track or generate_track(np.random.default_rng(seed))
+        self.pilot = pilot
+        self.env = NeurolapEnv(max_steps=MAX_STEPS, track=track)
+        self.obs, _ = self.env.reset(seed=seed, track=track)
+        self.best, self.last_gain = 0.0, 0
+        self.stalled = False
+        self.info: dict = {"completion": 0.0, "collision": False}
+
+    @property
+    def done(self) -> bool:
+        return self.env.done or self.stalled
+
+    def step(self) -> None:
+        self.obs, _, _, _, self.info = self.env.step(self.pilot(self.obs))
+        if self.info["completion"] > self.best + 1e-9:
+            self.best, self.last_gain = self.info["completion"], self.env.steps
+        elif self.env.steps - self.last_gain >= STALL_STEPS:
+            self.stalled = True  # la voiture est bloquée ou tourne en rond
+
+    @property
+    def finished(self) -> bool:
+        return self.info["completion"] >= 1.0 and not self.info["collision"]
+
+    @property
+    def status(self) -> str:
+        if not self.done:
+            return "running"
+        if self.finished:
+            return "finished"
+        if self.info["collision"]:
+            return "crashed"
+        return "stalled" if self.stalled else "timeout"
+
+    def result(self) -> EpisodeResult:
+        return EpisodeResult(self.info["completion"], self.env.steps, self.finished)
+
+
 def run_episode(pilot: Callable[[np.ndarray], Sequence[float]], seed: int) -> EpisodeResult:
-    env = NeurolapEnv(max_steps=MAX_STEPS)
-    obs, _ = env.reset(seed=seed)
-    best, last_gain = 0.0, 0
-    info: dict = {"completion": 0.0, "collision": False}
-    while not env.done:
-        obs, _, _, _, info = env.step(pilot(obs))
-        if info["completion"] > best + 1e-9:
-            best, last_gain = info["completion"], env.steps
-        elif env.steps - last_gain >= STALL_STEPS:
-            break  # la voiture est bloquée ou tourne en rond
-    finished = info["completion"] >= 1.0 and not info["collision"]
-    return EpisodeResult(info["completion"], env.steps, finished)
+    ep = Episode(pilot, seed)
+    while not ep.done:
+        ep.step()
+    return ep.result()
 
 
 def evaluate_pilot(pilot: Callable[[np.ndarray], Sequence[float]], seeds: Iterable[int]) -> float:
@@ -66,6 +106,8 @@ class Generation:
     mean_fitness: float
     best_genome: np.ndarray
     seeds: Sequence[int]
+    population: np.ndarray  # tous les génomes, triés par fitness décroissante
+    fitnesses: np.ndarray  # fitness correspondantes (même ordre)
 
 
 def evolve(
@@ -104,7 +146,17 @@ def evolve(
             elites = pop[order[:n_elite]]
             best = elites[0].copy()
             if on_generation:
-                on_generation(Generation(gen, float(fit[order[0]]), float(fit.mean()), best, seeds))
+                on_generation(
+                    Generation(
+                        gen,
+                        float(fit[order[0]]),
+                        float(fit.mean()),
+                        best,
+                        seeds,
+                        pop[order].copy(),
+                        fit[order].copy(),
+                    )
+                )
             # Élitisme : les meilleurs passent tels quels, les autres sont des élites mutées.
             parents = elites[rng.integers(0, n_elite, size=pop_size - n_elite)]
             children = parents + rng.normal(0.0, sigma, size=parents.shape)

@@ -9,22 +9,26 @@ import numpy as np
 from sim.car import CarParams, CarState, car_corners, step_car
 from sim.progress import ProgressTracker, project
 from sim.sensors import MAX_RANGE, cast_rays, wall_segments, window_segments
-from sim.track import generate_track
+from sim.track import Track, generate_track
 
 
 class NeurolapEnv:
     def __init__(
-        self, params: CarParams | None = None, dt: float = 1 / 30, max_steps: int = 3000
+        self,
+        params: CarParams | None = None,
+        dt: float = 1 / 30,
+        max_steps: int = 3000,
+        track: Track | None = None,
     ) -> None:
         self.params = params or CarParams()
         self.dt = dt
         self.max_steps = max_steps
         self.rng = np.random.default_rng()
-        self._new_episode()
+        self._new_episode(track)
 
-    def _new_episode(self) -> None:
-        """Génère un circuit depuis le rng et place la voiture sur la ligne de départ."""
-        self.track = generate_track(self.rng)
+    def _new_episode(self, track: Track | None = None) -> None:
+        """Circuit donné (partageable, immuable) ou généré ; voiture sur la ligne de départ."""
+        self.track = track if track is not None else generate_track(self.rng)
         x, y = self.track.start_pos
         self.car = CarState(x=x, y=y, heading=self.track.start_heading)
         self._segments = wall_segments(self.track)
@@ -35,9 +39,11 @@ class NeurolapEnv:
         self.done = False
         self.steps = 0
 
-    def reset(self, seed: int | None = None) -> tuple[np.ndarray, dict[str, Any]]:
+    def reset(
+        self, seed: int | None = None, track: Track | None = None
+    ) -> tuple[np.ndarray, dict[str, Any]]:
         self.rng = np.random.default_rng(seed)
-        self._new_episode()
+        self._new_episode(track)
         rays = self._rays()
         return self._observe(rays), self._info(rays)
 

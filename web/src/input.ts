@@ -5,7 +5,17 @@ const LEFT = ["ArrowLeft", "KeyA"];
 const RIGHT = ["ArrowRight", "KeyD"];
 const UP = ["ArrowUp", "KeyW"];
 const DOWN = ["ArrowDown", "KeyS"];
-const HANDLED = new Set([...LEFT, ...RIGHT, ...UP, ...DOWN, "KeyR", "KeyP", "Space"]);
+const REPLAY_KEYS = ["Home", "End", "Digit1", "Digit2", "Digit3", "Space"];
+const HANDLED = new Set([
+  ...LEFT,
+  ...RIGHT,
+  ...UP,
+  ...DOWN,
+  ...REPLAY_KEYS,
+  "KeyR",
+  "KeyP",
+  "KeyV",
+]);
 
 const any = (pressed: ReadonlySet<string>, codes: string[]): boolean =>
   codes.some((c) => pressed.has(c));
@@ -23,6 +33,9 @@ export interface InputHandlers {
   onInput(msg: InputMessage): void; // appelé uniquement quand l'entrée change
   onReset(sameSeed: boolean): void;
   onToggleMode(): void; // bascule clavier <-> pilote IA
+  onToggleView(): void; // bascule jeu <-> rediffusion
+  isReplay(): boolean; // en rediffusion, les touches ne conduisent pas la voiture
+  onReplayKey(code: string, shift: boolean): void;
 }
 
 export interface Keyboard {
@@ -44,7 +57,17 @@ export function installKeyboard(h: InputHandlers): Keyboard {
   window.addEventListener("keydown", (e) => {
     if (!HANDLED.has(e.code)) return;
     e.preventDefault(); // évite le défilement de la page
-    if (e.repeat) return;
+    if (e.repeat && !(h.isReplay() && (LEFT.includes(e.code) || RIGHT.includes(e.code)))) return;
+    if (e.code === "KeyV") {
+      pressed.clear();
+      update();
+      h.onToggleView();
+      return;
+    }
+    if (h.isReplay()) {
+      h.onReplayKey(e.code, e.shiftKey);
+      return;
+    }
     if (e.code === "KeyP") {
       h.onToggleMode();
       return;
@@ -53,6 +76,7 @@ export function installKeyboard(h: InputHandlers): Keyboard {
       h.onReset(e.shiftKey);
       return;
     }
+    if (REPLAY_KEYS.includes(e.code)) return;
     pressed.add(e.code);
     update();
   });

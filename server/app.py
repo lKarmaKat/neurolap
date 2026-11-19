@@ -10,6 +10,8 @@ from typing import Any
 from websockets import broadcast
 from websockets.asyncio.server import Server, ServerConnection, serve
 
+from agents.runs import RunStore
+from server.hub import Hub
 from server.protocol import dumps, parse_message
 from server.session import Session
 
@@ -18,8 +20,13 @@ FPS = 30  # cadence d'affichage ; le dt de la simulation reste celui de l'env
 
 @contextlib.asynccontextmanager
 async def running_server(
-    session: Session, host: str = "127.0.0.1", port: int = 8765, fps: float = FPS
+    session: Session,
+    host: str = "127.0.0.1",
+    port: int = 8765,
+    fps: float = FPS,
+    store: RunStore | None = None,
 ) -> AsyncIterator[Server]:
+    hub = Hub(session, store)
     clients: set[ServerConnection] = set()
 
     def send_all(msgs: list[dict[str, Any]]) -> None:
@@ -29,18 +36,13 @@ async def running_server(
     async def handler(ws: ServerConnection) -> None:
         clients.add(ws)
         try:
-            for m in session.snapshot():
+            for m in hub.snapshot():
                 await ws.send(dumps(m))
             async for raw in ws:
                 msg = parse_message(raw)
                 if msg is None:
                     continue
-                if msg["type"] == "input":
-                    session.set_input(msg["steering"], msg["throttle"])
-                elif msg["type"] == "mode":
-                    session.set_mode(msg["mode"])
-                else:
-                    send_all(session.reset(msg["seed"]))
+                send_all(hub.handle(msg))
         finally:
             clients.discard(ws)
 
@@ -49,7 +51,7 @@ async def running_server(
         period = 1.0 / fps
         nxt = loop.time()
         while True:
-            send_all(session.tick())
+            send_all(hub.tick())
             nxt += period  # échéance absolue : pas de dérive cumulée
             delay = nxt - loop.time()
             if delay > 0:
@@ -68,7 +70,12 @@ async def running_server(
                 await task
 
 
-async def main(host: str = "127.0.0.1", port: int = 8765, pilot: Any = None) -> None:
-    async with running_server(Session(pilot=pilot), host, port):
+async def main(
+    host: str = "127.0.0.1",
+    port: int = 8765,
+    pilot: Any = None,
+    store: RunStore | None = None,
+) -> None:
+    async with running_server(Session(pilot=pilot), host, port, store=store):
         print(f"Neurolap : ws://{host}:{port}")
         await asyncio.Future()  # tourne jusqu'à Ctrl+C
