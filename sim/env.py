@@ -14,7 +14,7 @@ from sim.track import generate_track
 
 class NeurolapEnv:
     def __init__(
-        self, params: CarParams | None = None, dt: float = 1 / 30, max_steps: int = 1000
+        self, params: CarParams | None = None, dt: float = 1 / 30, max_steps: int = 3000
     ) -> None:
         self.params = params or CarParams()
         self.dt = dt

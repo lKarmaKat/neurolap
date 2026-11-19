@@ -10,9 +10,9 @@ from dataclasses import dataclass
 class CarParams:
     wheelbase: float = 2.5  # empattement L (m)
     max_steer: float = 0.5  # braquage max δ_max (rad)
-    accel: float = 8.0  # accélération à plein gaz (m/s²)
-    drag: float = 0.5  # traînée linéaire (1/s)
-    max_speed: float = 20.0  # vitesse max avant (m/s)
+    accel: float = 12.0  # accélération à plein gaz (m/s²)
+    drag: float = 0.35  # traînée linéaire (1/s)
+    max_speed: float = 35.0  # vitesse max avant (m/s)
     max_reverse_speed: float = 5.0  # vitesse max arrière (m/s)
     car_length: float = 4.0  # emprise pour les collisions (m)
     car_width: float = 1.8
