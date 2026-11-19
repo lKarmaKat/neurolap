@@ -18,6 +18,22 @@ def wall_segments(track: Track) -> tuple[np.ndarray, np.ndarray]:
     return a, b
 
 
+RAY_WINDOW = 70  # demi-fenêtre (en segments, ~1 m chacun) autour de la voiture, > MAX_RANGE
+
+
+def window_segments(
+    seg_a: np.ndarray, seg_b: np.ndarray, k: int, half: int = RAY_WINDOW
+) -> tuple[np.ndarray, np.ndarray]:
+    """Segments des deux murs proches de l'indice de ligne centrale k (indices circulaires).
+
+    Le segment i du mur gauche est à l'indice i, celui du mur droit à i + N (voir wall_segments).
+    """
+    n = len(seg_a) // 2
+    idx = (k + np.arange(-half, half + 1)) % n
+    both = np.concatenate([idx, idx + n])
+    return seg_a[both], seg_b[both]
+
+
 def cast_rays(
     x: float,
     y: float,

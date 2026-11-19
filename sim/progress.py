@@ -6,23 +6,35 @@ import numpy as np
 
 from sim.track import Track
 
+PROJECT_WINDOW = 30  # demi-fenêtre de recherche (segments) autour de l'indice précédent
 
-def project(track: Track, points: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+
+def project(
+    track: Track, points: np.ndarray, hint: int | None = None
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Projette K points (K, 2) sur la ligne centrale.
 
-    Retourne (s, lateral) : abscisse curviligne et distance à la ligne centrale (m), formes (K,).
+    Sans `hint` : recherche sur tous les segments. Avec `hint` (indice de segment connu, par
+    exemple celui du pas précédent) : recherche limitée à une fenêtre autour, bien plus rapide.
+    Retourne (s, lateral, index) : abscisse curviligne (m), distance à la ligne centrale (m)
+    et indice du segment le plus proche, formes (K,).
     """
-    a = track.center
-    ab = np.roll(a, -1, axis=0) - a  # (N, 2)
-    seg_len2 = (ab**2).sum(axis=1)  # (N,)
-    ap = points[:, None, :] - a[None, :, :]  # (K, N, 2)
-    t = np.clip((ap * ab[None]).sum(axis=2) / seg_len2, 0.0, 1.0)  # (K, N)
-    diff = ap - t[:, :, None] * ab[None]
-    dist = np.linalg.norm(diff, axis=2)  # (K, N)
-    i = dist.argmin(axis=1)
+    n = len(track.center)
+    idx = (
+        np.arange(n)
+        if hint is None
+        else (hint + np.arange(-PROJECT_WINDOW, PROJECT_WINDOW + 1)) % n
+    )
+    a = track.center[idx]  # (W, 2)
+    ab = track.center[(idx + 1) % n] - a
+    seg_len2 = (ab**2).sum(axis=1)  # (W,)
+    ap = points[:, None, :] - a[None, :, :]  # (K, W, 2)
+    t = np.clip((ap * ab[None]).sum(axis=2) / seg_len2, 0.0, 1.0)  # (K, W)
+    dist = np.linalg.norm(ap - t[:, :, None] * ab[None], axis=2)  # (K, W)
+    j = dist.argmin(axis=1)
     k = np.arange(len(points))
-    s = track.arclength[i] + t[k, i] * np.sqrt(seg_len2[i])
-    return s, dist[k, i]
+    s = track.arclength[idx[j]] + t[k, j] * np.sqrt(seg_len2[j])
+    return s, dist[k, j], idx[j]
 
 
 def wrap_delta(delta: float, length: float) -> float:
