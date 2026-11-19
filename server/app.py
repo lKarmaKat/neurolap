@@ -68,7 +68,7 @@ async def running_server(
                 await task
 
 
-async def main(host: str = "127.0.0.1", port: int = 8765) -> None:
-    async with running_server(Session(), host, port):
+async def main(host: str = "127.0.0.1", port: int = 8765, pilot: Any = None) -> None:
+    async with running_server(Session(pilot=pilot), host, port):
         print(f"Neurolap : ws://{host}:{port}")
         await asyncio.Future()  # tourne jusqu'à Ctrl+C

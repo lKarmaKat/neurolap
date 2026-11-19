@@ -66,7 +66,7 @@ def generate_track(
     r_max: float = 105.0,
     width: float = 12.0,
     spacing: float = 1.0,
-    max_attempts: int = 50,
+    max_attempts: int = 500,
 ) -> Track:
     """Génère un circuit valide. Déterministe pour un état de `rng` donné."""
     step = 2 * math.pi / n_control

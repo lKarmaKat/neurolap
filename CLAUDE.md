@@ -39,6 +39,8 @@ Depuis la racine du projet (Windows, venv dans `.venv`) :
 - Tests : `.venv\Scripts\python -m pytest`
 - Lint : `.venv\Scripts\python -m ruff check .`
 - Serveur : `.venv\Scripts\python -m server` (ws://127.0.0.1:8765, options `--host`, `--port`)
+- Entraînement : `.venv\Scripts\python -m agents.train --gens 80` (sauvegarde `models/best.npz`, ignoré par git, ~3 min). Voir un pilote entraîné : `.venv\Scripts\python -m server --pilot models/best.npz`, puis P dans le navigateur.
+- Benchmark sim : `.venv\Scripts\python tools\benchmark.py`
 - Web : `cd web`, `npm install` (une fois), `npm run dev`, puis ouvrir `http://localhost:5173/` (serveur Python lancé dans un autre terminal). Clavier : flèches ou Z/Q/S/D, P = pilote IA (agents/ray_pilot.py) <-> clavier, R = nouveau circuit, Maj+R = rejouer le même. Typecheck + build : `npm run build`.
 
 ## Économie de tokens (priorité du projet)

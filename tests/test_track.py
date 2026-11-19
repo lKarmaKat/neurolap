@@ -62,3 +62,8 @@ def test_100_seeds_all_valid():
     for seed in range(100):
         t = make(seed)
         assert t.length > 0
+
+
+def test_rare_seed_that_needed_more_than_50_attempts():
+    """Régression : la seed 1317 épuisait 50 tentatives (acceptation ~15 % par tirage)."""
+    assert make(1317).length > 0
