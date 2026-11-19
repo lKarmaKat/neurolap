@@ -39,7 +39,7 @@ Depuis la racine du projet (Windows, venv dans `.venv`) :
 - Tests : `.venv\Scripts\python -m pytest`
 - Lint : `.venv\Scripts\python -m ruff check .`
 - Serveur : `.venv\Scripts\python -m server` (ws://127.0.0.1:8765, options `--host`, `--port`)
-- Web : _à compléter (incrément 7)_
+- Web : `cd web`, `npm install` (une fois), `npm run dev`, puis ouvrir `http://localhost:5173/?demo` (serveur Python lancé dans un autre terminal). `?demo` envoie une entrée constante (provisoire, avant le clavier). Typecheck + build : `npm run build`.
 
 ## Économie de tokens (priorité du projet)
 
