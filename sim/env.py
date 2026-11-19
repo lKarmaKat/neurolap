@@ -7,6 +7,7 @@ from typing import Any
 import numpy as np
 
 from sim.car import CarParams, CarState, step_car
+from sim.track import generate_track
 
 
 class NeurolapEnv:
@@ -16,14 +17,19 @@ class NeurolapEnv:
         self.params = params or CarParams()
         self.dt = dt
         self.max_steps = max_steps
-        self.car = CarState()
-        self.steps = 0
         self.rng = np.random.default_rng()
+        self._new_episode()
+
+    def _new_episode(self) -> None:
+        """Génère un circuit depuis le rng et place la voiture sur la ligne de départ."""
+        self.track = generate_track(self.rng)
+        x, y = self.track.start_pos
+        self.car = CarState(x=x, y=y, heading=self.track.start_heading)
+        self.steps = 0
 
     def reset(self, seed: int | None = None) -> tuple[np.ndarray, dict[str, Any]]:
         self.rng = np.random.default_rng(seed)
-        self.car = CarState()
-        self.steps = 0
+        self._new_episode()
         return self._observe(), {}
 
     def step(self, action: Any) -> tuple[np.ndarray, float, bool, bool, dict[str, Any]]:

@@ -43,3 +43,12 @@ def test_truncated_exactly_at_max_steps():
     env.reset()
     flags = [env.step([0.0, 0.0])[3] for _ in range(5)]
     assert flags == [False] * 4 + [True]
+
+
+def test_reset_places_car_on_start_and_same_seed_same_track():
+    e1, e2 = NeurolapEnv(), NeurolapEnv()
+    e1.reset(seed=9)
+    e2.reset(seed=9)
+    assert np.array_equal(e1.track.center, e2.track.center)
+    assert (e1.car.x, e1.car.y) == e1.track.start_pos
+    assert e1.car.heading == e1.track.start_heading
