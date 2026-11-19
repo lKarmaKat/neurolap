@@ -14,6 +14,8 @@ class CarParams:
     drag: float = 0.5  # traînée linéaire (1/s)
     max_speed: float = 20.0  # vitesse max avant (m/s)
     max_reverse_speed: float = 5.0  # vitesse max arrière (m/s)
+    car_length: float = 4.0  # emprise pour les collisions (m)
+    car_width: float = 1.8
 
     @property
     def max_yaw_rate(self) -> float:
@@ -45,3 +47,13 @@ def step_car(
         speed=speed,
         yaw_rate=yaw_rate,
     )
+
+
+def car_corners(state: CarState, params: CarParams) -> list[tuple[float, float]]:
+    """Les 4 coins du rectangle de la voiture (centré sur x, y)."""
+    c, s = math.cos(state.heading), math.sin(state.heading)
+    hl, hw = params.car_length / 2, params.car_width / 2
+    return [
+        (state.x + c * dx - s * dy, state.y + s * dx + c * dy)
+        for dx, dy in ((hl, -hw), (hl, hw), (-hl, hw), (-hl, -hw))
+    ]

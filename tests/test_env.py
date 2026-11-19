@@ -9,8 +9,10 @@ def rollout(seed: int, actions: list[list[float]]) -> list[np.ndarray]:
     obs, _ = env.reset(seed=seed)
     out = [obs]
     for a in actions:
-        obs, *_ = env.step(a)
+        obs, _, terminated, truncated, _ = env.step(a)
         out.append(obs)
+        if terminated or truncated:
+            break
     return out
 
 
