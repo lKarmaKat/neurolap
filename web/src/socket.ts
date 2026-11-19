@@ -1,4 +1,4 @@
-import type { InputMessage, ServerMessage, StateMessage, TrackMessage } from "./protocol";
+import type { ClientMessage, ServerMessage, StateMessage, TrackMessage } from "./protocol";
 
 // État reçu du serveur : la boucle de dessin le lit, le réseau l'écrit.
 export interface GameData {
@@ -9,10 +9,11 @@ export interface GameData {
 
 export interface Connection {
   data: GameData;
-  send(msg: InputMessage): void;
+  send(msg: ClientMessage): void;
 }
 
-export function connect(url: string): Connection {
+// `onOpen` : appelé à chaque (re)connexion, pour renvoyer l'entrée courante.
+export function connect(url: string, onOpen?: () => void): Connection {
   const data: GameData = { track: null, state: null, connected: false };
   let ws: WebSocket | null = null;
 
@@ -21,6 +22,7 @@ export function connect(url: string): Connection {
     ws = sock;
     sock.onopen = () => {
       data.connected = true;
+      onOpen?.();
     };
     sock.onmessage = (ev: MessageEvent<string>) => {
       const msg = JSON.parse(ev.data) as ServerMessage;

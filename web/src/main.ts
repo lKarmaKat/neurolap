@@ -1,3 +1,4 @@
+import { installKeyboard } from "./input";
 import { render } from "./render";
 import { connect } from "./socket";
 
@@ -7,12 +8,15 @@ const wsUrl = params.get("ws") ?? "ws://127.0.0.1:8765";
 const canvas = document.getElementById("game");
 if (!(canvas instanceof HTMLCanvasElement)) throw new Error("canvas #game introuvable");
 
-const conn = connect(wsUrl);
-
-// Mode démo (?demo) : entrée constante, remplacée par le clavier à l'incrément 8.
-if (params.has("demo")) {
-  setInterval(() => conn.send({ type: "input", steering: 0.15, throttle: 0.6 }), 100);
-}
+// Les deux objets se référencent : `keyboard` n'est lu qu'après leur création.
+const conn = connect(wsUrl, () => conn.send(keyboard.current()));
+const keyboard = installKeyboard({
+  onInput: (msg) => conn.send(msg),
+  onReset: (sameSeed) => {
+    const seed = conn.data.track?.seed;
+    conn.send(sameSeed && seed !== undefined ? { type: "reset", seed } : { type: "reset" });
+  },
+});
 
 function frame(): void {
   render(canvas as HTMLCanvasElement, conn.data);

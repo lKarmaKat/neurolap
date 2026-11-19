@@ -103,6 +103,15 @@ function drawHud(
   }
   const s = d.state;
   if (!s || !d.track) return;
+  ctx.fillStyle = "rgba(232,232,232,0.6)";
+  ctx.font = "13px system-ui, sans-serif";
+  ctx.fillText(
+    "↑↓←→ ou Z/Q/S/D : conduire   R : nouveau circuit   Maj+R : rejouer ce circuit",
+    16,
+    h - 28,
+  );
+  ctx.fillStyle = "#e8e8e8";
+  ctx.font = "16px system-ui, sans-serif";
   ctx.fillText(`Complétion : ${(s.completion * 100).toFixed(1)} %`, 16, 16);
   ctx.fillText(`Vitesse : ${(s.car.speed * 3.6).toFixed(0)} km/h`, 16, 38);
   ctx.fillText(`Pas : ${s.step}   Seed : ${d.track.seed}`, 16, 60);

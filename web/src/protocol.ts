@@ -37,6 +37,13 @@ export interface StateMessage {
 
 export type ServerMessage = TrackMessage | StateMessage;
 
+export interface ResetMessage {
+  type: "reset";
+  seed?: number; // absent : le serveur tire une seed au hasard
+}
+
+export type ClientMessage = InputMessage | ResetMessage;
+
 export interface InputMessage {
   type: "input";
   steering: number;
