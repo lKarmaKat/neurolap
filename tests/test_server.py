@@ -76,3 +76,21 @@ def test_websocket_integration():
                 raise AssertionError("la voiture n'a pas accéléré")
 
     asyncio.run(asyncio.wait_for(scenario(), timeout=10))
+
+
+def test_steering_ramps_up_then_recenters():
+    s = Session()
+    s.set_input(1.0, 0.0)
+    prev, values = 0.0, []
+    for _ in range(12):
+        s.tick()
+        values.append(s.steering)
+        assert s.steering >= prev
+        prev = s.steering
+    assert 0.0 < values[0] < 0.5 and values[-1] == 1.0  # montée progressive
+    s.set_input(0.0, 0.0)
+    ticks = 0
+    while s.steering > 0.0:
+        s.tick()
+        ticks += 1
+    assert ticks <= 5  # recentrage plus rapide que la montée

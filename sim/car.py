@@ -16,11 +16,23 @@ class CarParams:
     max_reverse_speed: float = 5.0  # vitesse max arrière (m/s)
     car_length: float = 4.0  # emprise pour les collisions (m)
     car_width: float = 1.8
+    max_lateral_accel: float = 20.0  # accélération latérale max (m/s², ~2 g)
+
+    def steer_limit(self, speed: float) -> float:
+        """Braquage maximal autorisé (rad) à cette vitesse : v²·tan δ / L <= a_lat_max."""
+        v2 = speed * speed
+        if v2 < 1e-9:
+            return self.max_steer
+        return min(self.max_steer, math.atan(self.max_lateral_accel * self.wheelbase / v2))
 
     @property
     def max_yaw_rate(self) -> float:
-        """Vitesse angulaire maximale atteignable (rad/s), pour normaliser l'observation."""
-        return self.max_speed / self.wheelbase * math.tan(self.max_steer)
+        """Vitesse angulaire maximale atteignable (rad/s), pour normaliser l'observation.
+
+        Maximum atteint à la vitesse où la butée de braquage rejoint la limite latérale.
+        """
+        v_cross = math.sqrt(self.max_lateral_accel * self.wheelbase / math.tan(self.max_steer))
+        return self.max_lateral_accel / v_cross
 
 
 @dataclass(frozen=True)
@@ -36,9 +48,9 @@ def step_car(
     state: CarState, steering: float, throttle: float, params: CarParams, dt: float
 ) -> CarState:
     """Avance la voiture d'un pas dt (Euler explicite). Actions supposées déjà dans [-1, 1]."""
-    delta = steering * params.max_steer
     speed = state.speed + (throttle * params.accel - params.drag * state.speed) * dt
     speed = min(max(speed, -params.max_reverse_speed), params.max_speed)
+    delta = steering * params.steer_limit(speed)  # steering = fraction du braquage autorisé
     yaw_rate = speed / params.wheelbase * math.tan(delta)
     return CarState(
         x=state.x + speed * math.cos(state.heading) * dt,
